@@ -2,32 +2,41 @@
 
 module Main (main) where
 
-import           Control.Concurrent        (forkIO)
-import           Control.Monad             (forever, unless)
-import           Data.Maybe                (maybe)
+import           Control.Monad             (forever)
 import           Data.Text                 (Text)
-import           Network.Connection
-import qualified Data.Text                 as T
+import qualified Data.UUID.V4              as UUID (nextRandom)
 import qualified Data.Text.IO              as T
-import           Network.RocketChat
+import           Network.RocketChat        as RC
 import qualified Network.WebSockets        as WS
-import qualified Network.WebSockets.Stream as WS
 
 main :: IO ()
 main = do
-  initialize bot "rocket.cat.pdx.edu" 443
+  initialize bot "rocketchat.domain.com" 443
 
 bot :: WS.ClientApp ()
 bot conn = do
   connect conn defaultConnectRequest
 
-  _ <- forkIO $ forever $ do
-    msg <- WS.receiveData conn
-    T.putStrLn msg
+  uuid <- UUID.nextRandom
 
-  let loop = do
-        line <- T.getLine
-        unless (T.null line) $ WS.sendTextData conn line >> loop
+  login conn $ defaultLoginRequest {
+    RC.id = uuid
+    , params = [ Credentials
+                 (Username "hellobot")
+                 (encode_pass "password")
+               ]
+    }
 
-  loop
-  WS.sendClose conn ("Bye!" :: Text)
+  _ <- forever $ do
+      message <- WS.receiveData conn
+      T.putStrLn message
+      handle_message conn message
+
+  WS.sendClose conn ("Disconnecting..." :: Text)
+
+handle_message :: WS.Connection -> Text -> IO ()
+handle_message conn msg = do
+  print (message_type msg)
+  case message_type msg of
+    Just Ping -> RC.send_ping conn
+    _         -> return ()

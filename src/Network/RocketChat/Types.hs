@@ -2,26 +2,23 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
-module Network.RocketChat.Types
-  ( -- * Type synonyms
-    Hostname
-  , Port
-  -- * Sub-types
-  , Username
-  , Password
-  , Credentials
-  -- * Requests
-  , ConnectRequest
-  , LoginRequest
-  -- * Defaults
-  , defaultConnectRequest
-  , defaultLoginRequest
-  ) where
+module Network.RocketChat.Types where
 
 import GHC.Generics
 import Data.Aeson
 import Data.Text
 import Data.UUID (nil, UUID)
+
+-- |
+-- Possible message responses from the webserver
+data Message = Added
+             | Changed
+             | Connected
+             | Ping
+             | Ready
+             | Result
+             | Updated
+  deriving Show
 
 data ConnectRequest = ConnectRequest {
     msg :: Text
@@ -31,6 +28,8 @@ data ConnectRequest = ConnectRequest {
 instance ToJSON ConnectRequest where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON ConnectRequest
+
+defaultConnectRequest :: ConnectRequest
 defaultConnectRequest = ConnectRequest { msg="connect"
                                        , version="1"
                                        , support=["1", "pre2", "pre1"] }
@@ -67,14 +66,24 @@ data LoginRequest = LoginRequest {
 instance ToJSON LoginRequest where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON LoginRequest
+
+defaultLoginRequest :: LoginRequest
 defaultLoginRequest = LoginRequest { msg="method"
                                    , method="login"
                                    , id=nil
                                    , params=[] }
 
+data PingResponse = PingResponse {
+    msg :: Text
+  } deriving (Generic, Show)
+instance ToJSON PingResponse where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON PingResponse
+
+pong :: PingResponse
+pong = PingResponse { msg="pong" }
+
+
+
 type Hostname = Text
 type Port     = Int
-
-data ConnectionOptions = ConnectionOptions { hostname :: Hostname
-                                           , port :: Int
-                                           }
