@@ -19,18 +19,27 @@ import           Crypto.Hash.SHA256        (hash)
 import qualified Data.Aeson                as A
 import qualified Data.ByteString.Lazy      as BL (toStrict)
 import qualified Data.ByteString.Base16    as BS (encode)
-import           Data.Maybe                (maybe)
 import qualified Data.HashMap.Strict       as HM (toList)
-import qualified Data.Text                 as T (Text)
+import qualified Data.Text                 as T (Text, unpack)
 import           Data.Text.Encoding        (decodeUtf8, encodeUtf8)
+import           Data.Time                 (getZonedTime)
+import           Data.UUID                 (UUID)
+import qualified Data.UUID.V4              as UUID (nextRandom)
 import           Network.Connection
 import           Network.Socket            (HostName, PortNumber)
 import qualified Network.WebSockets        as WS
 import qualified Network.WebSockets.Stream as WS
-import           Network.RocketChat.Types
 
--- |
--- Starts the connection to the websocket
+import           Network.RocketChat.Config
+import           Network.RocketChat.Types
+import           Network.RocketChat.WebSocket
+
+run :: Handler -> FilePath -> IO ()
+run handler cfg_path = do
+  config <- parse_config cfg_path
+  initialize (bot handler config) (cf_host config) (cf_port config)
+
+-- | Starts the connection to the websocket
 initialize :: WS.ClientApp b -> HostName -> PortNumber -> IO b
 initialize app hostname port = do
   ctx <- initConnectionContext
@@ -49,33 +58,50 @@ initialize app hostname port = do
                           (maybe (return ()) (connectionPut con . BL.toStrict))
   WS.runClientWithStream stream hostname "/websocket" WS.defaultConnectionOptions [] app
 
--- |
--- Sends a connection request to the websocket
-connect :: WS.Connection -> ConnectRequest -> IO ()
-connect conn connectRequest = do
-  WS.sendTextData conn $ A.encode connectRequest
+bot :: Handler -> Config -> WS.ClientApp ()
+bot handler config conn = do
+  connect conn defaultConnectRequest
+  forever $ do
+      message <- WS.receiveData conn
+      log_msg message
+      handler rc_instance message
+  where
+    forever a = a >> forever a
+    rc_instance = RC_Instance conn config
 
--- |
--- Sends a login request to the websocket
-login :: WS.Connection -> LoginRequest -> IO ()
-login conn loginRequest = do
-  WS.sendTextData conn $ A.encode loginRequest
+-- | Default actions for handling responses
+default_handler :: RC_Instance -> Message -> IO ()
+default_handler (RC_Instance conn _) msg = do
+  uuid <- gen_uuid
+  case message_type msg of
+    Just Connected -> login conn $ loginRequest uuid
+    Just Ping      -> send_ping conn
+    _              -> return ()
+  where
+    loginRequest uuid = defaultLoginRequest {
+        mr_id  = uuid
+      , mr_params = [ Credentials
+                      (Username "oinkbot")
+                      (encode_pass "oinkoinkoink")
+                    ] }
 
--- |
--- Encodes a password with sha-256
+-- | Encodes a password with sha-256
 encode_pass :: T.Text -> Password
 encode_pass pwd = Password (gen_digest pwd) "sha-256"
   where
     gen_digest = decodeUtf8 . BS.encode . hash . encodeUtf8
 
--- |
--- Retrieves the type of message recieved
-message_type :: T.Text -> Maybe Message
+-- | Returns a randomly generated UUID
+gen_uuid :: IO UUID
+gen_uuid = UUID.nextRandom
+
+-- | Retrieves the type of message recieved
+message_type :: Message -> Maybe MessageResponse
 message_type msg = case (A.decodeStrict (encodeUtf8 msg)) :: Maybe A.Value of
                    Just x  -> msg_field x
                    Nothing -> Nothing
   where
-    msg_field :: A.Value -> Maybe Message
+    msg_field :: A.Value -> Maybe MessageResponse
     msg_field (A.Object o) = case lookup "msg" (HM.toList o) of
                                Just x  -> msg_field x
                                Nothing -> Nothing
@@ -90,7 +116,7 @@ message_type msg = case (A.decodeStrict (encodeUtf8 msg)) :: Maybe A.Value of
       | otherwise       = Nothing
     msg_field _            = Nothing
 
--- |
--- Sends a ping to the websocket
-send_ping :: WS.Connection -> IO ()
-send_ping conn = WS.sendTextData conn $ A.encode pong
+-- | Logs a message to terminal
+log_msg :: T.Text -> IO ()
+log_msg s = getZonedTime
+            >>= \time -> putStrLn $ (show time) ++ "\t" ++ (T.unpack s)
