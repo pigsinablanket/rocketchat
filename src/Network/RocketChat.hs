@@ -11,19 +11,21 @@
 -- RocketChat library.
 
 module Network.RocketChat
-  ( module Network.RocketChat.Types
-  , module Network.RocketChat
+  ( module Network.RocketChat
+  , module Network.RocketChat.Config
+  , module Network.RocketChat.Logging
+  , module Network.RocketChat.Types
+  , module Network.RocketChat.WebSocket
   ) where
 
+import           Control.Concurrent        (forkIO)
 import           Crypto.Hash.SHA256        (hash)
 import qualified Data.Aeson                as A
 import qualified Data.ByteString.Lazy      as BL (toStrict)
 import qualified Data.ByteString.Base16    as BS (encode)
 import qualified Data.HashMap.Strict       as HM (toList)
-import qualified Data.Text                 as T (Text, unpack)
+import qualified Data.Text                 as T (Text)
 import           Data.Text.Encoding        (decodeUtf8, encodeUtf8)
-import           Data.Time                 (getZonedTime)
-import           Data.UUID                 (UUID)
 import qualified Data.UUID.V4              as UUID (nextRandom)
 import           Network.Connection
 import           Network.Socket            (HostName, PortNumber)
@@ -31,6 +33,7 @@ import qualified Network.WebSockets        as WS
 import qualified Network.WebSockets.Stream as WS
 
 import           Network.RocketChat.Config
+import           Network.RocketChat.Logging
 import           Network.RocketChat.Types
 import           Network.RocketChat.WebSocket
 
@@ -63,8 +66,8 @@ bot handler config conn = do
   connect conn defaultConnectRequest
   forever $ do
       message <- WS.receiveData conn
-      log_msg message
-      handler rc_instance message
+      log_msg_recv message
+      forkIO $ handler rc_instance message
   where
     forever a = a >> forever a
     rc_instance = RC_Instance conn config
@@ -74,11 +77,11 @@ default_handler :: RC_Instance -> Message -> IO ()
 default_handler (RC_Instance conn _) msg = do
   uuid <- gen_uuid
   case message_type msg of
-    Just Connected -> login conn $ loginRequest uuid
-    Just Ping      -> send_ping conn
+    Just Connected -> login conn $ login_request uuid
+    Just Ping      -> get_rooms conn uuid -- send_ping conn
     _              -> return ()
   where
-    loginRequest uuid = defaultLoginRequest {
+    login_request uuid = loginRequest {
         mr_id  = uuid
       , mr_params = [ Credentials
                       (Username "oinkbot")
@@ -95,7 +98,7 @@ encode_pass pwd = Password (gen_digest pwd) "sha-256"
 gen_uuid :: IO UUID
 gen_uuid = UUID.nextRandom
 
--- | Retrieves the type of message recieved
+-- | Retrieves the type of message received
 message_type :: Message -> Maybe MessageResponse
 message_type msg = case (A.decodeStrict (encodeUtf8 msg)) :: Maybe A.Value of
                    Just x  -> msg_field x
@@ -115,8 +118,3 @@ message_type msg = case (A.decodeStrict (encodeUtf8 msg)) :: Maybe A.Value of
       | s == "updated"   = Just Updated
       | otherwise       = Nothing
     msg_field _            = Nothing
-
--- | Logs a message to terminal
-log_msg :: T.Text -> IO ()
-log_msg s = getZonedTime
-            >>= \time -> putStrLn $ (show time) ++ "\t" ++ (T.unpack s)
