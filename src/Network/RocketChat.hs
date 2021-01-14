@@ -24,13 +24,14 @@ import qualified Data.Aeson                as A
 import qualified Data.ByteString.Lazy      as BL (toStrict)
 import qualified Data.ByteString.Base16    as BS (encode)
 import qualified Data.HashMap.Strict       as HM (toList)
+import qualified Data.List                 as L (lookup)
 import qualified Data.Text                 as T (Text)
-import           Data.Text.Encoding        (decodeUtf8, encodeUtf8)
 import qualified Data.UUID.V4              as UUID (nextRandom)
 import           Network.Connection
 import           Network.Socket            (HostName, PortNumber)
 import qualified Network.WebSockets        as WS
 import qualified Network.WebSockets.Stream as WS
+import           Relude
 
 import           Network.RocketChat.Config
 import           Network.RocketChat.Logging
@@ -40,6 +41,7 @@ import           Network.RocketChat.WebSocket
 run :: Handler -> FilePath -> IO ()
 run handler cfg_path = do
   config <- parse_config cfg_path
+  putStrLn $ "Config parsed"
   initialize (bot handler config) (cf_host config) (cf_port config)
 
 -- | Starts the connection to the websocket
@@ -69,7 +71,6 @@ bot handler config conn = do
       log_msg_recv message
       forkIO $ handler rc_instance message
   where
-    forever a = a >> forever a
     rc_instance = RC_Instance conn config
 
 -- | Default actions for handling responses
@@ -84,8 +85,8 @@ default_handler (RC_Instance conn _) msg = do
     login_request uuid = loginRequest {
         mr_id  = uuid
       , mr_params = [ Credentials
-                      (Username "oinkbot")
-                      (encode_pass "oinkoinkoink")
+                      (Username "test-bot")
+                      (encode_pass "password")
                     ] }
 
 -- | Encodes a password with sha-256
@@ -105,7 +106,7 @@ message_type msg = case (A.decodeStrict (encodeUtf8 msg)) :: Maybe A.Value of
                    Nothing -> Nothing
   where
     msg_field :: A.Value -> Maybe MessageResponse
-    msg_field (A.Object o) = case lookup "msg" (HM.toList o) of
+    msg_field (A.Object o) = case L.lookup "msg" (HM.toList o) of
                                Just x  -> msg_field x
                                Nothing -> Nothing
     msg_field (A.String s)

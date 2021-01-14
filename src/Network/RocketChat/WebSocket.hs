@@ -3,12 +3,11 @@
 module Network.RocketChat.WebSocket where
 
 import qualified Data.Aeson          as A
-import           Data.Text           as T (Text)
-import           Data.Text.Encoding       (encodeUtf8)
+import qualified Data.List           as L (lookup)
 import qualified Data.HashMap.Strict as HM (toList)
-import qualified Data.Scientific     as S (floatingOrInteger)
 import qualified Data.UUID           as UUID
 import qualified Network.WebSockets  as WS
+import           Relude
 
 import           Network.RocketChat.Logging
 import           Network.RocketChat.Types
@@ -46,7 +45,7 @@ get_rooms :: WS.Connection -> UUID -> IO () -- (Maybe Text)
 get_rooms conn uuid = do
   log_msg_send $ A.encode $ getRoomsRequest { mr_id = uuid }
   WS.sendTextData conn $ A.encode $ getRoomsRequest { mr_id = uuid }
-  response <- listen_for_uuid conn uuid
+  _response <- listen_for_uuid conn uuid
   return () -- response
 
 -- | Get current public server settings
@@ -56,7 +55,7 @@ get_public_settings conn uuid = do
   WS.sendTextData conn $ A.encode publicSettingsRequest { mr_id = uuid }
 
 listen_for_uuid :: WS.Connection -> UUID -> IO (Maybe Text)
-listen_for_uuid conn uuid = do
+listen_for_uuid conn _uuid = do
   msg <- WS.receiveData conn
   case parse_for_uuid msg of
     Just _  -> return $ Just msg
@@ -67,7 +66,7 @@ parse_for_uuid msg = case (A.decodeStrict (encodeUtf8 msg)) of
                        Just x  -> uuid_field x
                        Nothing -> Nothing
   where
-    uuid_field (A.Object value) = case lookup "id" (HM.toList value) of
+    uuid_field (A.Object value) = case L.lookup "id" (HM.toList value) of
                                     Just x  -> uuid_field x
                                     Nothing -> Nothing
     uuid_field (A.String uuid)  = UUID.fromText uuid

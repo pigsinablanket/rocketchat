@@ -3,6 +3,7 @@
 module Network.RocketChat.Logging where
 
 import           Data.Time (getZonedTime)
+import           Relude
 
 -- | Logs a sent message to terminal
 log_msg_send :: Show a => a -> IO ()

@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 
 module Network.RocketChat.Types
@@ -8,11 +7,12 @@ module Network.RocketChat.Types
 
 import Data.Aeson
 import Data.String.Utils (replace)
-import Data.Text (Text, empty)
 import Data.UUID (UUID, nil)
 import GHC.Generics
 import Network.Socket (HostName, PortNumber)
 import Network.WebSockets (Connection)
+import Relude hiding (tail)
+import Relude.Unsafe (tail)
 
 -- |
 -- The instance for a rocketchat connection
@@ -54,7 +54,7 @@ defaultConnectRequest :: Request
 defaultConnectRequest = ConnectRequest {
     cr_msg     = "connect"
   , cr_version = "1"
-  , cr_support = ["1", "pre2", "pre1"]
+  , cr_support = ["1"]
   }
 
 data Username = Username {
@@ -122,7 +122,7 @@ instance FromJSON Request
 methodRequest :: Request
 methodRequest = MethodRequest {
     mr_msg    = "method"
-  , mr_method = empty
+  , mr_method = ""
   , mr_id     = nil
   , mr_params = []
   }
