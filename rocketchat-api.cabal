@@ -18,9 +18,23 @@ library
                       Network.RocketChat.Logging
                       Network.RocketChat.Types
                       Network.RocketChat.WebSocket
-  default-extensions:
-                      NoImplicitPrelude
+                      Network.RocketChat.Effects
+                      Network.RocketChat.Effects.Config
+                      Network.RocketChat.Effects.Logging
+                      Network.RocketChat.Effects.UUID
+  default-extensions: NoImplicitPrelude
                     , OverloadedStrings
+                    , DataKinds
+                    , FlexibleContexts
+                    , GADTs
+                    , LambdaCase
+                    , PolyKinds
+                    , RankNTypes
+                    , ScopedTypeVariables
+                    , TypeApplications
+                    , TypeOperators
+                    , TypeFamilies
+                    , TemplateHaskell
   build-depends:      base >=4.14 && <4.15
                     , aeson
                     , bytestring
@@ -36,8 +50,10 @@ library
                     , websockets
                     , MissingH
                     , relude
+                    , polysemy
+                    , polysemy-plugin
   default-language:   Haskell2010
-  ghc-options:        -Wall -Werror
+  ghc-options:        -Wall -Werror -fplugin=Polysemy.Plugin -O2 -flate-specialise -fspecialise-aggressively -Wunused-packages
 
 executable example-hellobot
   main-is:            HelloBot.hs

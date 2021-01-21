@@ -1,12 +1,9 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 -- |
 -- Module      : Network.Rocketchat
--- Copyright   : (c) 2019 Daniel Reimer
+-- Copyright   : (c) 2021 Daniel Reimer
 -- License     : MIT
 -- Maintainer  : Daniel Reimer <daniel.k.reimer97@gmail.com>
 -- Stability   : experimental
--- Portability : OverloadedStrings
 --
 -- RocketChat library.
 
@@ -41,7 +38,6 @@ import           Network.RocketChat.WebSocket
 run :: Handler -> FilePath -> IO ()
 run handler cfg_path = do
   config <- parse_config cfg_path
-  putStrLn $ "Config parsed"
   initialize (bot handler config) (cf_host config) (cf_port config)
 
 -- | Starts the connection to the websocket
