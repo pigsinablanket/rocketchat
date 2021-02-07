@@ -1,9 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 
-module Network.RocketChat.Types
-  ( module Network.RocketChat.Types
-  , UUID
-  ) where
+module Network.RocketChat.Types where
 
 import Data.Aeson
 import Data.String.Utils (replace)

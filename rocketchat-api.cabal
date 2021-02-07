@@ -21,7 +21,9 @@ library
                       Network.RocketChat.Effects
                       Network.RocketChat.Effects.Config
                       Network.RocketChat.Effects.Logging
+                      Network.RocketChat.Effects.RocketChat
                       Network.RocketChat.Effects.UUID
+                      Network.RocketChat.Effects.WebSocket
   default-extensions: NoImplicitPrelude
                     , OverloadedStrings
                     , DataKinds
@@ -59,7 +61,20 @@ executable example-hellobot
   main-is:            HelloBot.hs
   hs-source-dirs:     examples
   default-language:   Haskell2010
-  ghc-options:        -Wall -Werror
+  ghc-options:        -Wall -Werror -fplugin=Polysemy.Plugin -O2 -flate-specialise -fspecialise-aggressively -Wunused-packages
   default-extensions: OverloadedStrings
+                    , DataKinds
+                    , FlexibleContexts
+                    , GADTs
+                    , LambdaCase
+                    , PolyKinds
+                    , RankNTypes
+                    , ScopedTypeVariables
+                    , TypeApplications
+                    , TypeOperators
+                    , TypeFamilies
+                    , TemplateHaskell
   build-depends:      base >=4.14 && <4.15
                     , rocketchat-api -any
+                    , polysemy
+                    , polysemy-plugin

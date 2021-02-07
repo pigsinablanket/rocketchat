@@ -12,8 +12,8 @@ data ConfigE m a where
 
 makeSem ''ConfigE
 
-runConfigIO :: Members '[Embed IO] r => Sem (ConfigE : r) a -> Sem r a
-runConfigIO = interpret $ \case
+runConfig :: Members '[Embed IO] r => Sem (ConfigE : r) a -> Sem r a
+runConfig = interpret $ \case
   GetConfig filepath -> embed $ parse_config filepath
 
 configParser :: IniParser Config

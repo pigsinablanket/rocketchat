@@ -3,15 +3,15 @@ module Network.RocketChat.Effects.Logging where
 import           Polysemy
 import           Relude
 
-data Logging m a where
-  Debug :: Text -> Logging m ()
-  Warning :: Text -> Logging m ()
-  Error :: Text -> Logging m ()
+data LoggingE m a where
+  Debug :: Text -> LoggingE m ()
+  Warning :: Text -> LoggingE m ()
+  Error :: Text -> LoggingE m ()
 
-makeSem ''Logging
+makeSem ''LoggingE
 
-runLoggingIO :: Members '[Embed IO] r => Sem (Logging : r) a -> Sem r a
-runLoggingIO = interpret $ \case
+runLogging :: Members '[Embed IO] r => Sem (LoggingE : r) a -> Sem r a
+runLogging = interpret $ \case
   Debug s -> embed $ print $ "[DEBUG] " <> s
   Warning s -> embed $ print $ "[WARNING] " <> s
   Error s -> embed $ print $ "[ERROR] " <> s

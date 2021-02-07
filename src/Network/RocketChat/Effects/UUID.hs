@@ -11,6 +11,6 @@ data UUID m a where
 
 makeSem ''UUID
 
-runUUIDIO :: Members '[Embed IO] r => Sem (UUID : r) a -> Sem r a
-runUUIDIO = interpret $ \case
+runUUID :: Members '[Embed IO] r => Sem (UUID : r) a -> Sem r a
+runUUID = interpret $ \case
   GenUUID -> embed $ UUID.nextRandom

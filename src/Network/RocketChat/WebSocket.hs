@@ -1,11 +1,10 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Network.RocketChat.WebSocket where
 
 import qualified Data.Aeson          as A
 import qualified Data.List           as L (lookup)
 import qualified Data.HashMap.Strict as HM (toList)
 import qualified Data.UUID           as UUID
+import Data.UUID (UUID)
 import qualified Network.WebSockets  as WS
 import           Relude
 
