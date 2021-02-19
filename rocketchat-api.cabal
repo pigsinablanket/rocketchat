@@ -21,7 +21,7 @@ library
                       Network.RocketChat.Effects
                       Network.RocketChat.Effects.Config
                       Network.RocketChat.Effects.Logging
-                      Network.RocketChat.Effects.RocketChat
+                      -- Network.RocketChat.Effects.RocketChat
                       Network.RocketChat.Effects.UUID
                       Network.RocketChat.Effects.WebSocket
   default-extensions: NoImplicitPrelude

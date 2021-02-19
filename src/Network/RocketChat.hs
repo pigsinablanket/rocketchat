@@ -26,33 +26,35 @@ import qualified Data.Text                 as T (Text)
 import qualified Network.WebSockets        as WS
 import           Relude
 import           Polysemy
+import           Polysemy.Async
 
 import           Network.RocketChat.Logging
 import           Network.RocketChat.Types
 import           Network.RocketChat.WebSocket (listen_for_uuid)
 import           Network.RocketChat.Effects
 
-run :: Handler -> FilePath -> IO ()
-run handler cfgPath = do
-  runFinal . embedToFinal . (runLogging . runConfig . runRocketChat . runUUID . runWebSocket (bot handler cfgPath)) . runConfig $ do
+runRocketChat :: Handler -> FilePath -> IO ()
+runRocketChat handler cfgPath = do
+  runFinal . embedToFinal . asyncToIO . runLogging . runConfig . runUUID . runWebSocket $ do
     config <- getConfig cfgPath
-    initialize (cf_host config) (cf_port config)
+    initializeWebSocket (cf_host config) (cf_port config) (bot handler cfgPath)
 
-bot :: Members [RocketChatE,UUID,LoggingE,ConfigE] r
+bot :: Members [WebSocketE,UUID,LoggingE,ConfigE,Async] r
     => Handler -> FilePath -> WS.Connection -> Sem r ()
 bot _handler cfgPath conn = do
   config <- getConfig cfgPath
   connect conn defaultConnectRequest
-  do-- forever $ do
+  messageLoop config
+  where
+    messageLoop config = do
       message <- recieveMessage conn
       debug message
-      -- forkIO $ default_handler rc_instance message
-      default_handler (rc_instance config) message
-  where
+      _ <- async $ default_handler (rc_instance config) message
+      messageLoop config
     rc_instance = RC_Instance conn
 
 -- | Default actions for handling responses
-default_handler :: Members [RocketChatE,UUID,LoggingE,ConfigE] r
+default_handler :: Members [WebSocketE,UUID,LoggingE,ConfigE] r
                 => RC_Instance -> Message -> Sem r ()
 default_handler (RC_Instance conn _) msg = do
   uuid <- genUUID
