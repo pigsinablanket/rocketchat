@@ -4,12 +4,32 @@ import qualified Data.Aeson          as A
 import qualified Data.List           as L (lookup)
 import qualified Data.HashMap.Strict as HM (toList)
 import qualified Data.UUID           as UUID
-import Data.UUID (UUID)
+import           Data.UUID (UUID)
 import qualified Network.WebSockets  as WS
 import           Relude
-
+import           Network.Connection
+import           Network.Socket (HostName, PortNumber)
+import qualified Network.WebSockets.Stream as WS
 import           Network.RocketChat.Logging
 import           Network.RocketChat.Types
+
+startWebSocketConnection :: HostName -> PortNumber -> (WS.Connection -> IO a) -> IO a
+startWebSocketConnection hostname port app = do
+  ctx <- initConnectionContext
+  con <- connectTo ctx $ ConnectionParams
+                          { connectionHostname = hostname
+                          , connectionPort = port
+                          , connectionUseSecure =
+                            Just $ TLSSettingsSimple
+                              { settingDisableCertificateValidation = True
+                              , settingDisableSession = False
+                              , settingUseServerName = False
+                              }
+                          , connectionUseSocks = Nothing
+                          }
+  stream <- WS.makeStream (fmap Just $ connectionGetChunk con)
+                          (maybe (return ()) (connectionPut con . toStrict))
+  WS.runClientWithStream stream hostname "/websocket" WS.defaultConnectionOptions [] app
 
 -- | Send a request and return the result
 send_request :: WS.Connection -> Request -> IO ()

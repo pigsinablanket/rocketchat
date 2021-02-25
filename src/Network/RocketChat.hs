@@ -9,38 +9,36 @@
 
 module Network.RocketChat
   ( module Network.RocketChat
-  -- , module Network.RocketChat.Config
   , module Network.RocketChat.Logging
   , module Network.RocketChat.Types
   , module Network.RocketChat.WebSocket
   , module Network.RocketChat.Effects
   ) where
 
--- import           Control.Concurrent        (forkIO)
-import           Crypto.Hash.SHA256        (hash)
-import qualified Data.Aeson                as A
-import qualified Data.ByteString.Base16    as BS (encode)
-import qualified Data.HashMap.Strict       as HM (toList)
-import qualified Data.List                 as L (lookup)
-import qualified Data.Text                 as T (Text)
-import qualified Network.WebSockets        as WS
-import           Relude
+import           Crypto.Hash.SHA256 (hash)
+import qualified Data.Aeson as A
+import qualified Data.ByteString.Base16 as BS (encode)
+import qualified Data.HashMap.Strict as HM (toList)
+import qualified Data.List as L (lookup)
+import qualified Data.Text as T (Text)
+import qualified Network.WebSockets as WS
 import           Polysemy
 import           Polysemy.Async
+import           Relude
 
 import           Network.RocketChat.Logging
 import           Network.RocketChat.Types
 import           Network.RocketChat.WebSocket (listen_for_uuid)
 import           Network.RocketChat.Effects
 
-runRocketChat :: Handler -> FilePath -> IO ()
+runRocketChat :: Members [WebSocketE,LoggingE,ConfigE,UUID] r => (RC_Instance -> Message -> Sem r ()) -> FilePath -> IO ()
 runRocketChat handler cfgPath = do
   runFinal . embedToFinal . asyncToIO . runLogging . runConfig . runUUID . runWebSocket $ do
     config <- getConfig cfgPath
     initializeWebSocket (cf_host config) (cf_port config) (bot handler cfgPath)
 
 bot :: Members [WebSocketE,UUID,LoggingE,ConfigE,Async] r
-    => Handler -> FilePath -> WS.Connection -> Sem r ()
+    => (RC_Instance -> Message -> Sem x ()) -> FilePath -> WS.Connection -> Sem r ()
 bot _handler cfgPath conn = do
   config <- getConfig cfgPath
   connect conn defaultConnectRequest

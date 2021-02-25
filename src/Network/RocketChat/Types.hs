@@ -22,8 +22,6 @@ data Config = Config {
   , cf_password :: Text
   } deriving (Eq, Show)
 
-type Handler = RC_Instance -> Message -> IO ()
-
 -- |
 -- Possible message responses from the webserver
 data MessageResponse = Added

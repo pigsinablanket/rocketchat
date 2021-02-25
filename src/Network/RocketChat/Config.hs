@@ -1,12 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Network.RocketChat.Config where
+module Network.RocketChat.Config
+    ( readAndParseConfig
+    ) where
 
 import           Data.Ini.Config as INI
 import qualified Data.Text.IO    as T (readFile)
-import           Relude
-
 import           Network.RocketChat.Types
+import           Relude
 
 configParser :: IniParser Config
 configParser = do
@@ -20,12 +21,11 @@ configParser = do
                   , cf_username = username
                   , cf_password = password }
 
-parse_config :: FilePath -> IO Config
-parse_config cfg_path = do
+readAndParseConfig :: FilePath -> IO Config
+readAndParseConfig cfg_path = do
   cfg <- T.readFile cfg_path
   case INI.parseIniFile (add_default cfg) configParser of
     Left err_str -> error $ toText err_str
     Right config -> return config
   where
     add_default config = config
---    add_default config = T.append "[default]" config

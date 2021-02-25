@@ -18,10 +18,10 @@ library
                       Network.RocketChat.Logging
                       Network.RocketChat.Types
                       Network.RocketChat.WebSocket
+                      Network.RocketChat.Internal
                       Network.RocketChat.Effects
                       Network.RocketChat.Effects.Config
                       Network.RocketChat.Effects.Logging
-                      -- Network.RocketChat.Effects.RocketChat
                       Network.RocketChat.Effects.UUID
                       Network.RocketChat.Effects.WebSocket
   default-extensions: NoImplicitPrelude
@@ -39,7 +39,6 @@ library
                     , TemplateHaskell
   build-depends:      base >=4.14 && <4.15
                     , aeson
-                    , bytestring
                     , text
                     , time
                     , unordered-containers
