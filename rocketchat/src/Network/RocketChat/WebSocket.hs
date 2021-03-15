@@ -32,56 +32,56 @@ startWebSocketConnection hostname port app = do
   WS.runClientWithStream stream hostname "/websocket" WS.defaultConnectionOptions [] app
 
 -- | Send a request and return the result
-send_request :: WS.Connection -> Request -> IO ()
-send_request conn request = do
-  log_msg_send $ A.encode request
+sendRequest :: WS.Connection -> Request -> IO ()
+sendRequest conn request = do
+  debug $ A.encode request
   WS.sendTextData conn $ A.encode request
 
 -- | Close the connection to the webserver
-close_connection :: WS.Connection -> IO ()
-close_connection conn = WS.sendClose conn ("Disconnecting..." :: Text)
+closeConnection :: WS.Connection -> IO ()
+closeConnection conn = WS.sendClose conn ("Disconnecting..." :: Text)
 
 -- | Sends a connection request to the websocket
 connect :: WS.Connection -> Request -> IO ()
 connect conn connectRequest = do
-  log_msg_send $ A.encode connectRequest
+  debug $ A.encode connectRequest
   WS.sendTextData conn $ A.encode connectRequest
 
 -- | Sends a login request to the websocket
 login :: WS.Connection -> Request -> IO ()
 login conn lr = do
-  log_msg_send $ A.encode lr
+  debug $ A.encode lr
   WS.sendTextData conn $ A.encode lr
 
 -- | Sends a ping to the websocket
-send_ping :: WS.Connection -> IO ()
-send_ping conn = do
-  log_msg_send $ A.encode pong
+sendPing :: WS.Connection -> IO ()
+sendPing conn = do
+  debug $ A.encode pong
   WS.sendTextData conn $ A.encode pong
 
 -- | Get a list of currently joined rooms
-get_rooms :: WS.Connection -> UUID -> IO () -- (Maybe Text)
-get_rooms conn uuid = do
-  log_msg_send $ A.encode $ getRoomsRequest { mr_id = uuid }
+getRooms :: WS.Connection -> UUID -> IO () -- (Maybe Text)
+getRooms conn uuid = do
+  debug $ A.encode $ getRoomsRequest { mr_id = uuid }
   WS.sendTextData conn $ A.encode $ getRoomsRequest { mr_id = uuid }
-  _response <- listen_for_uuid conn uuid
+  _response <- listenForUUID conn uuid
   return () -- response
 
 -- | Get current public server settings
-get_public_settings :: WS.Connection -> UUID -> IO ()
-get_public_settings conn uuid = do
-  log_msg_send $ A.encode publicSettingsRequest { mr_id = uuid }
+getPublicSettings :: WS.Connection -> UUID -> IO ()
+getPublicSettings conn uuid = do
+  debug $ A.encode publicSettingsRequest { mr_id = uuid }
   WS.sendTextData conn $ A.encode publicSettingsRequest { mr_id = uuid }
 
-listen_for_uuid :: WS.Connection -> UUID -> IO (Maybe Text)
-listen_for_uuid conn _uuid = do
+listenForUUID :: WS.Connection -> UUID -> IO (Maybe Text)
+listenForUUID conn _uuid = do
   msg <- WS.receiveData conn
-  case parse_for_uuid msg of
+  case parseForUUID msg of
     Just _  -> return $ Just msg
     Nothing -> return Nothing
 
-parse_for_uuid :: Message -> Maybe UUID
-parse_for_uuid msg = case (A.decodeStrict (encodeUtf8 msg)) of
+parseForUUID :: Message -> Maybe UUID
+parseForUUID msg = case (A.decodeStrict (encodeUtf8 msg)) of
                        Just x  -> uuid_field x
                        Nothing -> Nothing
   where

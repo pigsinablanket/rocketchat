@@ -2,7 +2,7 @@
 
 module Network.RocketChat.Types where
 
-import Data.Aeson
+import Data.Aeson as A
 import Data.String.Utils (replace)
 import Data.UUID (UUID, nil)
 import GHC.Generics
@@ -10,6 +10,12 @@ import Network.Socket (HostName, PortNumber)
 import Network.WebSockets (Connection)
 import Relude hiding (tail)
 import Relude.Unsafe (tail)
+import qualified Data.List as L (lookup)
+import qualified Data.Text as T (Text)
+import qualified Data.HashMap.Strict as HM (toList)
+import qualified Data.ByteString.Base16 as BS (encode)
+import           Crypto.Hash.SHA256 (hash)
+
 
 -- |
 -- The instance for a rocketchat connection
@@ -152,3 +158,30 @@ defaultSelfRequest = SubscribeRequest {
   , sr_name   = "stream-notify-user"
   , sr_params = ("", False)
   }
+
+-- | Encodes a password with sha-256
+encode_pass :: T.Text -> Password
+encode_pass pwd = Password (gen_digest pwd) "sha-256"
+  where
+    gen_digest = decodeUtf8 . BS.encode . hash . encodeUtf8
+
+-- | Retrieves the type of message received
+message_type :: Message -> Maybe MessageResponse
+message_type msg = case (A.decodeStrict (encodeUtf8 msg)) :: Maybe A.Value of
+                   Just x  -> msg_field x
+                   Nothing -> Nothing
+  where
+    msg_field :: A.Value -> Maybe MessageResponse
+    msg_field (A.Object o) = case L.lookup "msg" (HM.toList o) of
+                               Just x  -> msg_field x
+                               Nothing -> Nothing
+    msg_field (A.String s)
+      | s == "added"     = Just Added
+      | s == "changed"   = Just Changed
+      | s == "connected" = Just Connected
+      | s == "ping"      = Just Ping
+      | s == "ready"     = Just Ready
+      | s == "result"    = Just Result
+      | s == "updated"   = Just Updated
+      | otherwise       = Nothing
+    msg_field _            = Nothing

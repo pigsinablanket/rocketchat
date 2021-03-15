@@ -1,4 +1,4 @@
-module Network.RocketChat.Effects.UUID where
+module Network.RocketChat.Polysemy.UUID where
 
 import qualified Data.UUID as UUID (UUID)
 import qualified Data.UUID.V4 as UUID (nextRandom)

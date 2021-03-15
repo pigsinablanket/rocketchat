@@ -1,4 +1,4 @@
-module Network.RocketChat.Internal
+module Network.RocketChat.Polysemy.Internal
     ( bindSemToIO
     , embed_
     ) where

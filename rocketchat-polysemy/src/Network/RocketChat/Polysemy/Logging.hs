@@ -1,4 +1,4 @@
-module Network.RocketChat.Effects.Logging where
+module Network.RocketChat.Polysemy.Logging where
 
 import           Polysemy
 import           Relude
