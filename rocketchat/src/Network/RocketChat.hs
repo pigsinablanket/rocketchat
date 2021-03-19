@@ -40,7 +40,7 @@ defaultHandler (RC_Instance conn _) msg = do
   uuid <- UUID.nextRandom
   case message_type msg of
     Just Connected -> login conn $ login_request uuid
-    Just Ping      -> getRooms conn uuid -- send_ping conn
+    Just Ping      -> sendPing conn
     _              -> return ()
   where
     login_request uuid = loginRequest {

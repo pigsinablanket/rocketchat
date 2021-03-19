@@ -1,11 +1,12 @@
 module Main (main) where
 
-import Network.RocketChat as RC
+import Network.RocketChat.Types as RC
+import Network.RocketChat.Monad
 
 main :: IO ()
 main = runRocketChat handler "examples/config.ini"
 
-handler :: RC_Instance -> Message -> IO ()
-handler rc_instance@(RC_Instance _conn _config) msg = do
+handler :: MonadRocketChat m => Message -> m ()
+handler  msg = do
   case message_type msg of
-    _  -> RC.defaultHandler rc_instance msg
+    _  -> pure ()

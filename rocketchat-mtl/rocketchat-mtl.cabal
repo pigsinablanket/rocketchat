@@ -22,7 +22,6 @@ library
                     , OverloadedStrings
   build-depends:      base >=4.14 && <4.15
                     , text
-                    , network
                     , uuid
                     , unliftio
                     , websockets
@@ -30,3 +29,13 @@ library
                     , rocketchat
   default-language:   Haskell2010
   ghc-options:        -Wall -Werror -Wunused-packages
+
+executable example-hellobot
+  main-is:            HelloBot.hs
+  hs-source-dirs:     examples
+  default-language:   Haskell2010
+  ghc-options:        -Wall -Werror -Wunused-packages
+  default-extensions: OverloadedStrings
+  build-depends:      base >=4.14 && <4.15
+                    , rocketchat -any
+                    , rocketchat-mtl -any

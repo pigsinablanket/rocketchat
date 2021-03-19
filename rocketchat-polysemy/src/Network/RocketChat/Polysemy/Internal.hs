@@ -7,6 +7,7 @@ import           Polysemy
 import qualified Polysemy.Final as P
 import           Relude
 
+-- | un-embeds a sem monad to the IO monad
 bindSemToIO :: Member (P.Final IO) r => (p -> Sem r a) -> Sem r (p -> IO (Maybe a))
 bindSemToIO m = P.withStrategicToFinal $ do
     istate <- P.getInitialStateS
