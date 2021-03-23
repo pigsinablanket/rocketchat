@@ -17,23 +17,15 @@ import Network.RocketChat.Polysemy.Logging
 import Network.RocketChat.Polysemy.UUID
 import Network.RocketChat.Polysemy.WebSocket
 
-type RocketChatE = [WebSocketE,LoggingE,ConfigE,UUID,Async]
+type RocketChatE = [WebSocketE,LoggingE,ConfigE,UUIDE,Async]
 
-main :: IO ()
-main = runRocketChat handler "examples/config.ini"
-
-handler :: Members RocketChatE r => Message -> Sem r ()
-handler msg = do
-    case message_type msg of
-      _  -> defaultHandler msg
-
-runRocketChat :: Members [WebSocketE,LoggingE,ConfigE,UUID,Async] r
+runRocketChat :: Members [WebSocketE,LoggingE,ConfigE,UUIDE,Async] r
               => (Message -> Sem r ()) -> FilePath -> IO ()
 runRocketChat handler cfgPath =
-    runFinal . embedToFinal . asyncToIOFinal . runLogging . runConfig cfgPath . runUUID $
-        initializeWebSocket $ \conn -> runWebSocket conn (bot handler)
+    runFinal . embedToFinal . asyncToIOFinal . runUUID . runLogging . (runConfig cfgPath) $ do
+        initializeWebSocket (\conn -> runWebSocket conn (bot handler))
 
-bot :: Members [WebSocketE,LoggingE,UUID,Async] r
+bot :: Members [WebSocketE,LoggingE,UUIDE,Async] r
     => (Message -> Sem x ()) -> Sem r ()
 bot _handler = do
     connect defaultConnectRequest
@@ -43,13 +35,13 @@ bot _handler = do
         async $ defaultHandler message
 
 -- | Default actions for handling responses
-defaultHandler :: Members [WebSocketE,LoggingE,UUID] r
+defaultHandler :: Members [WebSocketE,LoggingE,UUIDE] r
                 => Message -> Sem r ()
 defaultHandler msg = do
     uuid <- genUUID
     case message_type msg of
         Just Connected -> login $ login_request uuid
-        Just Ping -> sendPing
+        Just Ping -> getRooms uuid -- send_ping conn
         _ -> return ()
   where
     login_request uuid = loginRequest {
